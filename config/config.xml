@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Setup>
+    <HostPortList>
+        <Host>
+	        <ip>192.168.40.72</ip>
+	        <port>2323</port>
+        </Host>
+        <Host>
+            <ip>192.168.42.94</ip>
+            <port>2323</port>
+        </Host>
+        <Host>
+            <ip>192.168.40.65</ip>
+            <port>2323</port>
+        </Host>
+        <Host>
+            <ip>192.168.40.64</ip>
+            <port>2323</port>
+        </Host>
+        <Host>
+            <ip>192.168.40.63</ip>
+            <port>2323</port>
+        </Host>
+        <Host>
+            <ip>192.168.40.69</ip>
+            <port>2323</port>
+        </Host>
+        <Host>
+            <ip>192.168.42.92</ip>
+            <port>2323</port>
+        </Host>
+        <Host>
+            <ip>192.168.40.20</ip>
+            <port>2323</port>
+        </Host>
+        <Host>
+            <ip>192.168.41.152</ip>
+            <port>2323</port>
+        </Host>
+    </HostPortList>
+    <ConnectionParams>
+        <count>10</count>
+        <rate>60.0</rate>
+        <port>2323</port>
+        <command>vpush</command>
+    </ConnectionParams>
+</Setup>
