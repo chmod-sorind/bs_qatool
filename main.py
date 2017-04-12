@@ -94,10 +94,11 @@ class MyApp(QtWidgets.QMainWindow, MyPythonWindow.Ui_MainWindow):
     @QtCore.pyqtSlot()
     def on_buttonAddItemToList_clicked(self):
         # ToDo: Make key ENTER add items to the list.
+        # ToDO: Change/add message when ip and port fields are empty.
         _getTextFromLineEditHost = self.lineEditHost.text()
         _getTextFromLineEditPort = self.lineEditAddPort.text()
         if _getTextFromLineEditHost:
-            ip_regex = r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"
+            ip_regex = r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$"
             ip_pattern = re.compile(ip_regex)
             if ip_pattern.match(_getTextFromLineEditHost):
                 ip_item = QStandardItem()

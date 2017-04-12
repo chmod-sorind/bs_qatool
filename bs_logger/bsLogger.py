@@ -1,7 +1,9 @@
 # bsLogger.py
 import logging
+import PyQt5
+from ui import MyPythonWindow
 
-logFile = 'logs\log.log'
+logFile = MyPythonWindow.Ui_MainWindow
 
 
 def write(log_level, msg):
