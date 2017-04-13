@@ -2,8 +2,8 @@ from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtCore import *
-from PyQt5.QtGui import QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QFileDialog, QMessageBox
+from PyQt5.QtGui import QStandardItem, QStandardItemModel, QCursor
+from PyQt5.QtWidgets import QFileDialog, QMessageBox, QPlainTextEdit
 import sys
 import re
 import telnetlib
@@ -12,6 +12,19 @@ import logging
 from ui import MyPythonWindow
 import xml.etree.ElementTree as ET
 from bs_logger import bsLogger
+
+
+class QPlainTextEditLogger(logging.Handler):
+    # def __init__(self):
+    #     super().__init__()
+    # widget = self.logsBox
+
+    # self.widget = QPlainTextEdit(parent)
+    # self.logsBox.setReadOnly(True)
+
+    def emit(self, record):
+        msg = self.format(record)
+        self.logsBox.appendPlainText(msg)
 
 
 class newTelnetThread(QThread):
@@ -39,24 +52,24 @@ class newTelnetThread(QThread):
         rate = self.telnetParams[1]
         port = self.telnetParams[2]
         command = self.telnetParams[3]
-        bsLogger.write(logging.info, "Telnet connection params.\n"
-                                     "Poll Count: {0}\n"
-                                     "Poll Rate: {1} sec\n"
-                                     "Port: {2}\nCommand: {3}".
-                       format(self.telnetParams[0],
-                              self.telnetParams[1],
-                              self.telnetParams[2],
-                              self.telnetParams[3]))
+        # bsLogger.write(logging.info, "Telnet connection params.\n"
+        #                              "Poll Count: {0}\n"
+        #                              "Poll Rate: {1} sec\n"
+        #                              "Port: {2}\nCommand: {3}".
+        #                format(self.telnetParams[0],
+        #                       self.telnetParams[1],
+        #                       self.telnetParams[2],
+        #                       self.telnetParams[3]))
 
         for pollNum in range(1, count + 1):
             for ipHost in self.listOfHosts:
-                    try:
-                        telnet = telnetlib.Telnet(ipHost, port, telnetTimeout)
-                        telnet.write((command + '\n').encode('UTF-8'))
-                        telnet.close()
-                        bsLogger.write(logging.info, ("#{0} Command {1} sent to {2}".format(pollNum, command, ipHost)))
-                    except Exception as e:
-                        bsLogger.write(logging.warn, "HOST [{0}] {1}".format(ipHost, e))
+                try:
+                    telnet = telnetlib.Telnet(ipHost, port, telnetTimeout)
+                    telnet.write((command + '\n').encode('UTF-8'))
+                    telnet.close()
+                    bsLogger.write(logging.info, ("#{0} Command {1} sent to {2}".format(pollNum, command, ipHost)))
+                except Exception as e:
+                    bsLogger.write(logging.warn, "HOST [{0}] {1}".format(ipHost, e))
             if pollNum < count:
                 pollRate = int(rate)
                 bsLogger.write(logging.info, "Sleeping for {} seconds".format(pollRate))
@@ -72,12 +85,19 @@ class newTelnetThread(QThread):
         self.finishedSignal.emit()
 
 
-class MyApp(QtWidgets.QMainWindow, MyPythonWindow.Ui_MainWindow):
+class MyApp(QtWidgets.QMainWindow, MyPythonWindow.Ui_MainWindow, QPlainTextEditLogger):
     def __init__(self, parent=None):
         super(MyApp, self).__init__(parent)
         self.setupUi(self)
 
-        # Button Functionality.
+        # Logging
+        self.logsBox = QPlainTextEditLogger()
+        self.logsBox.setFormatter(logging.basicConfig(format='%(asctime)s(%(levelname)s) %(message)s',
+                                                      datefmt='[%Y-%m-%dT%H:%M:%S]',
+                                                      level=logging.DEBUG))
+        logging.getLogger().addHandler(self.logsBox)
+
+        # Button Functionality
         self.buttonRemoveItemFromList.clicked.connect(self.buttonRemoveChecked)
         self.buttonStopTelnet.clicked.connect(self.stopTelnetThreading)
         self.checkBoxCheckAll.stateChanged.connect(self.CheckUncheckAll)
@@ -94,7 +114,7 @@ class MyApp(QtWidgets.QMainWindow, MyPythonWindow.Ui_MainWindow):
     @QtCore.pyqtSlot()
     def on_buttonAddItemToList_clicked(self):
         # ToDo: Make key ENTER add items to the list.
-        # ToDO: Change/add message when ip and port fields are empty.
+        # ToDo: Change/add message when ip and port fields are empty.
         _getTextFromLineEditHost = self.lineEditHost.text()
         _getTextFromLineEditPort = self.lineEditAddPort.text()
         if _getTextFromLineEditHost:
@@ -117,19 +137,25 @@ class MyApp(QtWidgets.QMainWindow, MyPythonWindow.Ui_MainWindow):
                         self.lineEditAddPort.clear()
                     else:
                         self.lineEditAddPort.setStyleSheet("background-color: rgb(255, 0, 0)")
-                        QtCore.QTimer.singleShot(200, lambda: self.lineEditAddPort.setStyleSheet("background-color: rgb(255, 255, 255)"))
-                        QtCore.QTimer.singleShot(500, lambda: self.lineEditAddPort.setStyleSheet("background-color: rgb(255, 0, 0)"))
-                        QtCore.QTimer.singleShot(700, lambda: self.lineEditAddPort.setStyleSheet("background-color: rgb(255, 255, 255)"))
-                        #QMessageBox.warning(self, 'Warning!', "<i>{}</i> doesn't look like a port!".format(_getTextFromLineEditPort))
+                        QtCore.QTimer.singleShot(200, lambda: self.lineEditAddPort.setStyleSheet(
+                            "background-color: rgb(255, 255, 255)"))
+                        QtCore.QTimer.singleShot(500, lambda: self.lineEditAddPort.setStyleSheet(
+                            "background-color: rgb(255, 0, 0)"))
+                        QtCore.QTimer.singleShot(700, lambda: self.lineEditAddPort.setStyleSheet(
+                            "background-color: rgb(255, 255, 255)"))
+                        # QMessageBox.warning(self, 'Warning!', "<i>{}</i> doesn't look like a port!".format(_getTextFromLineEditPort))
                 else:
                     self.model.appendRow([ip_item, QStandardItem('2323')])
                     self.lineEditHost.clear()
             else:
                 self.lineEditHost.setStyleSheet("background-color: rgb(255, 0, 0)")
-                QtCore.QTimer.singleShot(200, lambda: self.lineEditHost.setStyleSheet("background-color: rgb(255, 255, 255)"))
-                QtCore.QTimer.singleShot(500, lambda: self.lineEditHost.setStyleSheet("background-color: rgb(255, 0, 0)"))
-                QtCore.QTimer.singleShot(700, lambda: self.lineEditHost.setStyleSheet("background-color: rgb(255, 255, 255)"))
-                #QMessageBox.warning(self, 'Warning!', "<i>{}</i> doesn't look like an IP address!".format(_getTextFromLineEditHost))
+                QtCore.QTimer.singleShot(200, lambda: self.lineEditHost.setStyleSheet(
+                    "background-color: rgb(255, 255, 255)"))
+                QtCore.QTimer.singleShot(500,
+                                         lambda: self.lineEditHost.setStyleSheet("background-color: rgb(255, 0, 0)"))
+                QtCore.QTimer.singleShot(700, lambda: self.lineEditHost.setStyleSheet(
+                    "background-color: rgb(255, 255, 255)"))
+                # QMessageBox.warning(self, 'Warning!', "<i>{}</i> doesn't look like an IP address!".format(_getTextFromLineEditHost))
         else:
             self.statusBar().showMessage('Nothing to add')
 
@@ -162,7 +188,6 @@ class MyApp(QtWidgets.QMainWindow, MyPythonWindow.Ui_MainWindow):
         time.sleep(1)
         bsLogger.write(logging.info, 'Application exited.')
         quit()
-
 
     @QtCore.pyqtSlot()
     def on_buttonStartTelnet_clicked(self):
@@ -242,31 +267,31 @@ class MyApp(QtWidgets.QMainWindow, MyPythonWindow.Ui_MainWindow):
     @QtCore.pyqtSlot()
     def on_buttonSaveConfigToFile_clicked(self):
         print('buttonSaveConfigToFile was pressed')
-    #     fileName = QFileDialog.getOpenFileName(self, 'Open Config file...')
-    #     self.statusBar().showMessage("{} loaded...".format(fileName[0]))
-    #     tree = ET.parse(fileName[0])
-    #     root = tree.getroot()
-    #     for node in root:
-    #         if node.tag == 'count':
-    #             x = node.attrib
-    #             for item in x.items():
-    #                 count = int(item[1])
-    #         if node.tag == 'rate':
-    #             x = node.attrib
-    #             for item in x.items():
-    #                 rate = float(item[1])
-    #         if node.tag == 'port':
-    #             x = node.attrib
-    #             for item in x.items():
-    #                 port = item[1]
-    #         if node.tag == 'command':
-    #             x = node.attrib
-    #             for item in x.items():
-    #                 command = item[1]
-    #     self.countBox.setValue(count)
-    #     self.frequencyBox.setValue(rate)
-    #     self.lineEditCommand.setText(command)
-    #     self.lineEditPort.setText(port)
+        #     fileName = QFileDialog.getOpenFileName(self, 'Open Config file...')
+        #     self.statusBar().showMessage("{} loaded...".format(fileName[0]))
+        #     tree = ET.parse(fileName[0])
+        #     root = tree.getroot()
+        #     for node in root:
+        #         if node.tag == 'count':
+        #             x = node.attrib
+        #             for item in x.items():
+        #                 count = int(item[1])
+        #         if node.tag == 'rate':
+        #             x = node.attrib
+        #             for item in x.items():
+        #                 rate = float(item[1])
+        #         if node.tag == 'port':
+        #             x = node.attrib
+        #             for item in x.items():
+        #                 port = item[1]
+        #         if node.tag == 'command':
+        #             x = node.attrib
+        #             for item in x.items():
+        #                 command = item[1]
+        #     self.countBox.setValue(count)
+        #     self.frequencyBox.setValue(rate)
+        #     self.lineEditCommand.setText(command)
+        #     self.lineEditPort.setText(port)
 
 
 def main():
@@ -274,6 +299,7 @@ def main():
     form = MyApp()
     form.show()
     app.exec_()
+
 
 if __name__ == '__main__':
     main()
